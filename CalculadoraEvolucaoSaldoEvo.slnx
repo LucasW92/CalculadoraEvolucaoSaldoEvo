@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="CalculadoraEvolucaoSaldoEvo/CalculadoraEvolucaoSaldoEvo.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="CalculadoraEvolucaoSaldoEvo.Tests/CalculadoraEvolucaoSaldoEvo.Tests.csproj" />
+  </Folder>
+</Solution>
