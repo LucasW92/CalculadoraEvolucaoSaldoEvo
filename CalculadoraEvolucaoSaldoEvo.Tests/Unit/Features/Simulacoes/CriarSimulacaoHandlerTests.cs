@@ -29,7 +29,7 @@ public class TestesDoHandlerCriarSimulacao
     {
         // Arrange
         var request = new CriarSimulacaoRequest(1000.00m, 1.5m, 3);
-        var cancellationToken = CancellationToken.None;
+        var cancellationToken = TestContext.Current.CancellationToken;
 
         _unitOfWork.SaveChangesAsync(cancellationToken).Returns(1);
 
@@ -61,7 +61,7 @@ public class TestesDoHandlerCriarSimulacao
     {
         // Arrange
         var request = new CriarSimulacaoRequest(0m, 1.5m, 12);
-        var cancellationToken = CancellationToken.None;
+        var cancellationToken = TestContext.Current.CancellationToken;
 
         // Act
         var resultado = await _handler.Handle(request, cancellationToken);
@@ -80,7 +80,7 @@ public class TestesDoHandlerCriarSimulacao
     {
         // Arrange
         var request = new CriarSimulacaoRequest(1000.00m, 1.5m, 3);
-        var cancellationToken = CancellationToken.None;
+        var cancellationToken = TestContext.Current.CancellationToken;
 
         _unitOfWork
             .SaveChangesAsync(cancellationToken)

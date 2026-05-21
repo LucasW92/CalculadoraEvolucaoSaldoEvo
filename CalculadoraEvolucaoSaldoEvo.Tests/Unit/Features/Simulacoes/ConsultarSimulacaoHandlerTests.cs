@@ -21,6 +21,7 @@ public class TestesDoHandlerConsultarSimulacao
     {
         // Arrange
         int simulacaoId = 42;
+        var cancellationToken = TestContext.Current.CancellationToken;
         var simulacao = new Simulacao
         {
             Id = simulacaoId,
@@ -40,7 +41,7 @@ public class TestesDoHandlerConsultarSimulacao
             .Returns(simulacao);
 
         // Act
-        var resultado = await _handler.Handle(simulacaoId, CancellationToken.None);
+        var resultado = await _handler.Handle(simulacaoId, cancellationToken);
 
         // Assert
         resultado.IsSuccess.Should().BeTrue();
@@ -55,11 +56,12 @@ public class TestesDoHandlerConsultarSimulacao
     {
         // Arrange
         int simulacaoId = 999;
+        var cancellationToken = TestContext.Current.CancellationToken;
         _simulacaoRepositorio.ObterPorIdComEvolucoesAsync(simulacaoId, Arg.Any<CancellationToken>())
             .Returns((Simulacao?)null);
 
         // Act
-        var resultado = await _handler.Handle(simulacaoId, CancellationToken.None);
+        var resultado = await _handler.Handle(simulacaoId, cancellationToken);
 
         // Assert
         resultado.IsFailure.Should().BeTrue();
