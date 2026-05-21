@@ -1,6 +1,9 @@
 using CalculadoraEvolucaoSaldoEvo.Api.Extensions;
 using CalculadoraEvolucaoSaldoEvo.Application.Features.Simulacoes.Criar;
 using CalculadoraEvolucaoSaldoEvo.Application.Features.Simulacoes.Consultar;
+using CalculadoraEvolucaoSaldoEvo.Application.Common;
+using CalculadoraEvolucaoSaldoEvo.Domain.Common;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CalculadoraEvolucaoSaldoEvo.Api.Endpoints;
 
@@ -34,6 +37,7 @@ public static class SimulacaoEndpoints
     private static async Task<IResult> CriarSimulacao(
         CriarSimulacaoRequest request,
         CriarSimulacaoHandler handler,
+        HybridCache cache,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
@@ -53,30 +57,56 @@ public static class SimulacaoEndpoints
 
         var response = result.Value!;
 
+        // Pré-popula o cache já que a simulação acabou de ser criada
+        var consultaResponse = new ConsultarSimulacaoResponse(
+            Id: response.Id,
+            ValorTotalFinal: response.ValorTotalFinal,
+            TotalJuros: response.TotalJuros,
+            MemoriaCalculo: response.MemoriaCalculo.Select(e => new EvolucaoConsultaDto(
+                Mes: e.Mes,
+                SaldoInicial: e.SaldoInicial,
+                Juro: e.Juro,
+                SaldoFinal: e.SaldoFinal
+            )).ToList()
+        );
+
+        var cacheKey = $"simulacao:{response.Id}";
+        await cache.SetAsync(cacheKey, consultaResponse, cancellationToken: cancellationToken);
+
         return TypedResults.CreatedAtRoute(response, "ConsultarSimulacao", new { id = response.Id });
     }
 
     private static async Task<IResult> ConsultarSimulacao(
         int id,
         ConsultarSimulacaoHandler handler,
+        HybridCache cache,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         var logger = loggerFactory.CreateLogger("Api.Endpoints.Simulacoes");
+        var cacheKey = $"simulacao:{id}";
 
-        var result = await handler.Handle(id, cancellationToken);
+        var response = await cache.GetOrCreateAsync<ConsultarSimulacaoResponse?>(
+            cacheKey,
+            async token =>
+            {
+                var result = await handler.Handle(id, token);
+                return result.IsSuccess ? result.Value : null;
+            },
+            cancellationToken: cancellationToken
+        );
 
-        if (result.IsFailure)
+        if (response is null)
         {
             logger.LogWarning(
-                "Endpoint ConsultarSimulacao retornou falha. SimulacaoId: {SimulacaoId}; CodigoErro: {CodigoErro}; TipoErro: {TipoErro}",
-                id,
-                result.Error!.Code,
-                result.Error.Type);
+                "Endpoint ConsultarSimulacao retornou falha. SimulacaoId: {SimulacaoId}; CodigoErro: Simulacao.NaoEncontrada; TipoErro: NotFound",
+                id);
 
-            return result.ToProblemDetails();
+            return Result.Failure<ConsultarSimulacaoResponse>(
+                Error.NotFound("Simulacao.NaoEncontrada", string.Format(Mensagens.SimulacaoNaoEncontrada, id))
+            ).ToProblemDetails();
         }
 
-        return TypedResults.Ok(result.Value);
+        return TypedResults.Ok(response);
     }
 }

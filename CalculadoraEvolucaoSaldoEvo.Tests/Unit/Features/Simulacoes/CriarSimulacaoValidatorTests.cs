@@ -24,7 +24,7 @@ public class TestesDoValidadorCriarSimulacao
     public void Validar_ComPrazoMaximo_DevePassarNaValidacao()
     {
         // Arrange
-        var request = new CriarSimulacaoRequest(1000.00m, 0m, 600);
+        var request = new CriarSimulacaoRequest(1000.00m, 0m, 1200);
 
         // Act
         var resultado = _validator.Validate(request);
@@ -66,7 +66,7 @@ public class TestesDoValidadorCriarSimulacao
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
-    [InlineData(601)]
+    [InlineData(1201)]
     public void Validar_ComPrazoInvalido_DeveFalhar(int prazoMeses)
     {
         // Arrange

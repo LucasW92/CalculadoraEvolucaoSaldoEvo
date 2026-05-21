@@ -17,7 +17,7 @@ public sealed class CriarSimulacaoValidator : AbstractValidator<CriarSimulacaoRe
 
         RuleFor(x => x.PrazoMeses)
             .GreaterThan(0)
-            .LessThanOrEqualTo(600)
+            .LessThanOrEqualTo(1200)
             .WithMessage(Mensagens.PrazoMesesInvalido);
     }
 }

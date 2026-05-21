@@ -111,7 +111,7 @@ public class TestesDoCalculadorJuros
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    [InlineData(601)]
+    [InlineData(1201)]
     public void Calcular_ComPrazoInvalido_DeveRetornarFalhaDeValidacao(int prazoMeses)
     {
         var resultado = CalculadorJuros.Calcular(1000m, 1.5m, prazoMeses);
@@ -125,9 +125,49 @@ public class TestesDoCalculadorJuros
     [Fact]
     public void Calcular_ComPrazoMaximo_DeveRetornarSucesso()
     {
-        var resultado = CalculadorJuros.Calcular(1000m, 0m, 600);
+        var resultado = CalculadorJuros.Calcular(1000m, 0m, 1200);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Evolucoes.Should().HaveCount(600);
+        resultado.Value!.Evolucoes.Should().HaveCount(1200);
+    }
+
+    [Fact]
+    public void Calcular_QuandoOcorreEstouroDecimalNoSaldoInicial_DeveRetornarFalhaDeValidacaoComMensagemAdequada()
+    {
+        // Arrange
+        // Um valor inicial gigante somado a juros positivos estoura logo no primeiro cálculo
+        decimal valorInicial = decimal.MaxValue;
+        decimal taxaJurosMensal = 1.0m;
+        int prazoMeses = 1;
+
+        // Act
+        var resultado = CalculadorJuros.Calcular(valorInicial, taxaJurosMensal, prazoMeses);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error.Should().NotBeNull();
+        resultado.Error!.Type.Should().Be(ErrorType.Validation);
+        resultado.Error.Code.Should().Be("Calculo.LimiteExcedido");
+        resultado.Error.Message.Should().Be("O resultado da simulação excedeu o limite máximo permitido. Por favor, reduza algum dos parâmetros de simulação.");
+    }
+
+    [Fact]
+    public void Calcular_QuandoOcorreEstouroDecimalNoSaldoFinal_DeveRetornarFalhaDeValidacaoComMensagemAdequada()
+    {
+        // Arrange
+        // Um valor inicial de 10 bilhões com juros de 50% ao mês ao longo de 1200 meses estoura o limite decimal.MaxValue
+        decimal valorInicial = 10_000_000_000.00m;
+        decimal taxaJurosMensal = 50.0m;
+        int prazoMeses = 1200;
+
+        // Act
+        var resultado = CalculadorJuros.Calcular(valorInicial, taxaJurosMensal, prazoMeses);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error.Should().NotBeNull();
+        resultado.Error!.Type.Should().Be(ErrorType.Validation);
+        resultado.Error.Code.Should().Be("Calculo.LimiteExcedido");
+        resultado.Error.Message.Should().Be("O resultado da simulação excedeu o limite máximo permitido. Por favor, reduza algum dos parâmetros de simulação.");
     }
 }
